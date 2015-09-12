@@ -37,7 +37,7 @@ L.Path = L.Layer.extend({
 	getEvents: function () {
 		return {
 			zoomend: this._project,
-			moveend: this._update,
+			moveend: this._moveEnd,
 			viewreset: this._reset
 		};
 	},
@@ -73,6 +73,13 @@ L.Path = L.Layer.extend({
 
 	getElement: function () {
 		return this._path;
+	},
+
+	_moveEnd: function () {
+		if (this._renderer) {
+			this._renderer._update();
+		}
+		this._update();
 	},
 
 	_reset: function () {
