@@ -8,9 +8,6 @@ L.Canvas = L.Renderer.extend({
 		L.Renderer.prototype.onAdd.call(this);
 
 		this._layers = this._layers || {};
-
-		// redraw vectors since canvas is cleared upon removal
-		this._draw();
 	},
 
 	_initContainer: function () {
@@ -64,12 +61,26 @@ L.Canvas = L.Renderer.extend({
 	},
 
 	_updatePath: function (layer) {
-		this._redrawBounds = layer._pxBounds;
+		this._redrawBounds = this._computeRedrawBounds(layer._pxBounds);
 		this._draw(true);
 		layer._project();
 		layer._update();
 		this._draw();
 		this._redrawBounds = null;
+	},
+
+	_computeRedrawBounds: function (bounds) {
+		var layer;
+		for (var id in this._layers) {
+			layer = this._layers[id];
+			// Avoid readding already processed layer bounds
+			if (!bounds.contains(layer._pxBounds) && bounds.intersects(layer._pxBounds)) {
+				bounds.extend(layer._pxBounds.min);
+				bounds.extend(layer._pxBounds.max);
+				return this._computeRedrawBounds(bounds);
+			}
+		}
+		return bounds;
 	},
 
 	_updateStyle: function (layer) {
@@ -81,6 +92,7 @@ L.Canvas = L.Renderer.extend({
 
 		this._redrawBounds = this._redrawBounds || new L.Bounds();
 		this._redrawBounds.extend(layer._pxBounds.min).extend(layer._pxBounds.max);
+		this._redrawBounds = this._computeRedrawBounds(this._redrawBounds);
 
 		this._redrawRequest = this._redrawRequest || L.Util.requestAnimFrame(this._redraw, this);
 	},
