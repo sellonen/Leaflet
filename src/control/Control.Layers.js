@@ -190,10 +190,14 @@ L.Control.Layers = L.Control.extend({
 		    checked = this._map.hasLayer(obj.layer);
 
 		if (obj.overlay) {
-			input = document.createElement('input');
-			input.type = 'checkbox';
-			input.className = 'leaflet-control-layers-selector';
-			input.defaultChecked = checked;
+		    if (obj.mutex) {
+			    input = this._createRadioElement('leaflet-mutex-overlays', checked);
+		    } else {
+			    input = document.createElement('input');
+			    input.type = 'checkbox';
+			    input.className = 'leaflet-control-layers-selector';
+			    input.defaultChecked = checked;
+		    }
 		} else {
 			input = this._createRadioElement('leaflet-base-layers', checked);
 		}
@@ -216,7 +220,7 @@ L.Control.Layers = L.Control.extend({
 
 	_onInputClick: function () {
 		var i, input, obj,
-		    inputs = this._form.getElementsByTagName('input'),
+                    inputs = this._form.querySelectorAll('.leaflet-control-layers-selector'),
 		    inputsLen = inputs.length;
 
 		this._handlingClick = true;
@@ -236,6 +240,27 @@ L.Control.Layers = L.Control.extend({
 		this._handlingClick = false;
 
 		this._refocusOnMap();
+	},
+	addMutexOverlay: function (layer, name) {
+	    this._addMutexLayer(layer, name, true);
+	    return this._update();
+	},
+	_addMutexLayer: function (layer, name, overlay) {
+	    layer.on('add remove', this._onLayerChange, this);
+
+	    var id = L.stamp(layer);
+
+	    this._layers[id] = {
+		    layer: layer,
+		    name: name,
+		    mutex: true,
+		    overlay: overlay
+	    };
+
+	    if (this.options.autoZIndex && layer.setZIndex) {
+		    this._lastZIndex++;
+		    layer.setZIndex(this._lastZIndex);
+	    }
 	},
 
 	_expand: function () {
